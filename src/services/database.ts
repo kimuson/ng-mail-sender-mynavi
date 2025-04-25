@@ -1,5 +1,6 @@
 import { addTestData, fetchData } from './supabase';
 import { supabase } from '../lib/supabase';
+import { ApplyStatus } from '../lib/saveToSupabase';
 
 /**
  * 特定のテーブルとカラムに「1」という数値を登録する
@@ -18,9 +19,11 @@ export async function registerOne(tableName: string, columnName: string) {
   }
 }
 
-interface TableDataFilter {
-  status_category?: string;
-  apply_status?: string;
+interface GetTableDataParams {
+  status_category: string;
+  apply_status: ApplyStatus;
+  created_before?: Date;
+  apply_route?: string;
 }
 
 /**
@@ -28,23 +31,32 @@ interface TableDataFilter {
  * @param tableName テーブル名
  * @returns テーブルデータ
  */
-export async function getTableData(filter: TableDataFilter) {
+export async function getTableData({ status_category, apply_status, created_before, apply_route = 'マイナビ' }: GetTableDataParams) {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('applications')
       .select('*')
-      .eq('status_category', filter.status_category)
-      .eq('apply_status', filter.apply_status);
-
-    if (error) {
-      console.error('Supabase error:', error);
-      throw error;
+      .eq('status_category', status_category)
+      .eq('apply_status', apply_status)
+      .eq('apply_route', apply_route);
+    
+    if (created_before) {
+      query = query.lt('created_at', created_before.toISOString());
     }
 
-    return { success: true, data };
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    
+    return {
+      success: true,
+      data
+    };
   } catch (error) {
-    console.error('Error fetching data:', error);
-    return { success: false, error };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : '不明なエラーが発生しました'
+    };
   }
 }
 

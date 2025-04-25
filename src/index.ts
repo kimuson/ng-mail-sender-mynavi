@@ -45,8 +45,10 @@ app.post('/ng-mail-sender-mynavi', async (req, res) => {
     // Supabaseから対象データを取得
     const targetApplications = await getTableData({
       status_category: '年齢対象外(メール未送信)',
-      apply_status: ApplyStatus.DOCUMENT_REJECTED
+      apply_status: ApplyStatus.DOCUMENT_REJECTED,
+      created_before: new Date(Date.now() - 300 * 60 * 60 * 1000) // 48時間前の時刻
     });
+    console.log(targetApplications);
 
     if (!targetApplications.success || !targetApplications.data || targetApplications.data.length === 0) {
       return res.json({
@@ -60,7 +62,7 @@ app.post('/ng-mail-sender-mynavi', async (req, res) => {
       let browser: Browser | null = null;
       try {
         browser = await chromium.launch({
-          headless: true,
+          headless: false,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
@@ -77,6 +79,7 @@ app.post('/ng-mail-sender-mynavi', async (req, res) => {
         const page = await context.newPage();
         // 各応募者に対してメール送信処理を実行
         // 対象URLにアクセス
+        console.log(application.url);
         await page.goto(application.url);
         // ログインフォームの入力（ローカル環境の場合のみタイムアウトを設定）
         const inputOptions = isLocal ? { timeout: 5000 } : undefined;

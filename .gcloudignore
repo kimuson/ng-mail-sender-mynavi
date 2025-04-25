@@ -1,0 +1,7 @@
+*
+!.
+!main.py
+!requirements.txt
+!cloudsql.json
+!service-account.json
+!.env.yaml
